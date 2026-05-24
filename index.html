@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Auto Refresher Mini-App</title>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --dark-bg: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-light: #f1f5f9;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header / Controller Area */
+        .app-header {
+            background: var(--card-bg);
+            padding: 15px 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            z-index: 100;
+            border-bottom: 2px solid #334155;
+        }
+
+        .input-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 12px 18px;
+            border-radius: 10px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .url-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+        }
+
+        .btn-main {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 0 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-main:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        /* Controls Section */
+        .controls-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .switch-btn {
+            background: #334155;
+            color: #94a3b8;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s;
+        }
+
+        .switch-btn i { font-size: 14px; }
+
+        .switch-btn:hover { background: #475569; color: white; }
+
+        .switch-btn.active {
+            background: var(--success);
+            color: white;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-off.active {
+            background: var(--danger);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .status-badge {
+            font-size: 12px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: #000;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pulse-dot {
+            height: 8px;
+            width: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .active .pulse-dot {
+            background: #fff;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Iframe Viewport */
+        .viewer-area {
+            flex-grow: 1;
+            background: #ffffff;
+            position: relative;
+        }
+
+        #contentFrame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #fff;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            .input-section { flex-direction: column; }
+            .switch-btn { padding: 10px 12px; font-size: 13px; flex: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <!-- URL Input -->
+        <div class="input-section">
+            <input type="text" id="urlInput" class="url-input" placeholder="এখানে URL পেস্ট করুন (যেমন: skysysx.net)">
+            <button class="btn-main" onclick="loadTargetURL()">
+                <i class="fas fa-play"></i> লোড করুন
+            </button>
+        </div>
+
+        <!-- Timer Controls -->
+        <div class="controls-section">
+            <button id="btn5" class="switch-btn" onclick="startRefresh(5000, 'btn5')">
+                <div class="pulse-dot"></div> <i class="fas fa-bolt"></i> ৫ সেকেন্ড
+            </button>
+            <button id="btn10" class="switch-btn" onclick="startRefresh(10000, 'btn10')">
+                <div class="pulse-dot"></div> <i class="fas fa-clock"></i> ১০ সেকেন্ড
+            </button>
+            <button id="btnOff" class="switch-btn btn-off active" onclick="stopRefresh()">
+                <i class="fas fa-power-off"></i> রিফ্রেশ অফ
+            </button>
+            
+            <div class="status-badge" id="statusBar">
+                <span>অপেক্ষা করছে...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Content Display -->
+    <div class="viewer-area">
+        <iframe id="contentFrame" src="about:blank"></iframe>
+    </div>
+
+    <script>
+        let refreshInterval = null;
+        let activeURL = "";
+
+        // URL লোড করার ফাংশন
+        function loadTargetURL() {
+            let input = document.getElementById('urlInput').value.trim();
+            if (!input) {
+                alert("দয়া করে একটি লিঙ্ক দিন!");
+                return;
+            }
+
+            // যদি http না থাকে তবে যোগ করা হবে
+            if (!input.startsWith('http')) {
+                input = 'https://' + input;
+            }
+
+            // Iframe-এ সরাসরি লোড করার আগে প্রক্সি ব্যবহার করা হচ্ছে ব্লকিং এড়াতে
+            // এখানে 'allorigins' ব্যবহার করা হয়েছে যা একটি শক্তিশালী প্রক্সি
+            activeURL = "https://api.allorigins.win/raw?url=" + encodeURIComponent(input);
+            
+            const frame = document.getElementById('contentFrame');
+            frame.src = activeURL;
+            
+            document.getElementById('statusBar').innerHTML = "<span>লোড হয়েছে</span>";
+            stopRefresh(); // নতুন URL লোড হলে আগের টাইমার অফ হবে
+        }
+
+        // রিফ্রেশ শুরু করার ফাংশন
+        function startRefresh(time, btnId) {
+            if (!activeURL) {
+                alert("আগে লোড বাটনে ক্লিক করে লিঙ্ক সেট করুন!");
+                return;
+            }
+
+            // আগের ইন্টারভাল বন্ধ করা
+            clearInterval(refreshInterval);
+
+            // বাটন কালার আপডেট
+            document.querySelectorAll('.switch-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(btnId).classList.add('active');
+
+            let sec = time / 1000;
+            document.getElementById('statusBar').innerHTML = `<span>প্রতি ${sec} সেকেন্ডে চলছে</span>`;
+
+            // অটো রিফ্রেশ লজিক
+            refreshInterval = setInterval(() => {
+                // ক্যাশ এড়াতে টাইমস্ট্যাম্প যোগ করা হয়েছে
+                const finalUrl = activeURL + "&t=" + new Date().getTime();
+                document.getElementById('contentFrame').src = finalUrl;
+                console.log("Refreshing at: " + new Date().toLocaleTimeString());
+            }, time);
+        }
+
+        // রিফ্রেশ বন্ধ করার ফাংশন
+        function stopRefresh() {
+            clearInterval(refreshInterval);
+            document.querySelectorAll('.switch-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btnOff').classList.add('active');
+            document.getElementById('statusBar').innerHTML = "<span>বন্ধ আছে</span>";
+        }
+    </script>
+
+</body>
+</html>
